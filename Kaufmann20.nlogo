@@ -13,18 +13,19 @@ turtles-own [recipe-set cue-set]
 to setup
   ca
   crt (2 ^ power_N) + 1 [
-    fd 12 set
-    color ifelse-value (500 >= random 1001) [white][red]
+    fd 15
+    ;setxy random-xcor random-ycor
+    set color ifelse-value (500 >= random 1001) [white][red]
   ]
   ask turtles [
     create-cues-to n-of N_cues other turtles [set color sky]
-    set cue-set sort-on [who] out-cue-neighbors
+    set cue-set shuffle sort-on [who] out-cue-neighbors
     ask cues [die]
   ]
 
   ask turtles [
     create-recipes-to n-of (2 ^ N_cues) other turtles
-    set recipe-set sort-on [who] out-recipe-neighbors
+    set recipe-set shuffle sort-on [who] out-recipe-neighbors
     ask recipes [die]
   ]
 
@@ -40,7 +41,11 @@ to go
       if (red = [color] of x) [set cue-state (cue-state + 2 ^ i)]
       set i i + 1
     ]
-    set color [color] of (item cue-state recipe-set)
+    ifelse copy_or_twist? [
+      set color [color] of (item cue-state recipe-set)
+    ][
+      set color ifelse-value (red = [color] of (item cue-state recipe-set)) [white][red]
+    ]
   ]
 
   tick
@@ -85,7 +90,7 @@ power_N
 power_N
 3
 20
-12.0
+6.0
 1
 1
 NIL
@@ -162,7 +167,7 @@ PLOT
 10
 1475
 448
-plot 1
+State developement
 NIL
 NIL
 0.0
@@ -193,6 +198,17 @@ false
 "" ""
 PENS
 "default" 1.0 1 -16777216 true "" "histogram [count my-links] of turtles"
+
+SWITCH
+0
+114
+140
+147
+copy_or_twist?
+copy_or_twist?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
