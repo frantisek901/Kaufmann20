@@ -8,27 +8,39 @@
 extensions [nw]
 directed-link-breed [cues cue]
 directed-link-breed [recipes recipe]
-turtles-own [recipe-set cue-set]
+turtles-own [recipe-set initial-recipe cue-set switch old-color]
+globals [record]
 
 to setup
   ca
+  set record []
+  if original_Kaufmann? [
+    set original_recipe? true
+    set present_color? false
+    set switch_by_turtle? false
+    set copy_or_twist? true
+  ]
   crt (2 ^ power_N) + 1 [
     fd 15
     ;setxy random-xcor random-ycor
-    set color ifelse-value (500 >= random 1001) [white][red]
+    set color ifelse-value (grey_ratio >= random 1001) [grey][red]
+    set old-color color
   ]
+  ask turtles [set switch one-of other turtles]
   ask turtles [
     create-cues-to n-of N_cues other turtles [set color sky]
     set cue-set shuffle sort-on [who] out-cue-neighbors
     ask cues [die]
   ]
-
   ask turtles [
     create-recipes-to n-of (2 ^ N_cues) other turtles
     set recipe-set shuffle sort-on [who] out-recipe-neighbors
     ask recipes [die]
+    set initial-recipe []
+    foreach recipe-set [x ->
+      set initial-recipe lput ([color] of x) initial-recipe
+    ]
   ]
-
   reset-ticks
 end
 
@@ -38,26 +50,42 @@ to go
     let cue-state 0
     let i  0
     foreach cue-set [x ->
-      if (red = [color] of x) [set cue-state (cue-state + 2 ^ i)]
-      set i i + 1
+      let cue-col ([ifelse-value (present_color?) [color][old-color]] of x)
+      if (red = cue-col) [set cue-state (cue-state + 2 ^ i)]
+      set i (i + 1)
     ]
-    ifelse copy_or_twist? [
-      set color [color] of (item cue-state recipe-set)
+
+    let recipe-col ([ifelse-value (present_color?) [color][old-color]] of (item cue-state recipe-set))
+    if original_recipe? [set recipe-col (item cue-state initial-recipe)]
+    let switch-col ([ifelse-value (present_color?) [color][old-color]] of switch)
+
+    ifelse switch_by_turtle? [
+      set color recipe-col
+      if (switch_by_color = switch-col) [set color ifelse-value (red = color) [grey][red]]
     ][
-      set color ifelse-value (red = [color] of (item cue-state recipe-set)) [white][red]
+      ifelse copy_or_twist? [
+        set color recipe-col
+      ][
+      set color recipe-col
+      set color ifelse-value (red = color) [grey][red]
+      ]
     ]
   ]
 
   tick
 
   let col-sum (sum [color] of turtles)
-  if (abs((9.9 * ((2 ^ power_N) + 1)) - col-sum) < 1) or (col-sum = (15 * ((2 ^ power_N) + 1))) [stop]
+  set record lput col-sum record
+  if (stable_length < length record) [set record but-first record]
+  if (stable_length < length record) [set record but-first record]
+  if (ticks > stable_length and 1 = length remove-duplicates record) [stop]
+  ask turtles [set old-color color]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-222
+165
 10
-659
+602
 448
 -1
 -1
@@ -83,14 +111,14 @@ ticks
 
 SLIDER
 0
-45
-172
-78
+42
+140
+75
 power_N
 power_N
 3
 20
-6.0
+10.0
 1
 1
 NIL
@@ -99,7 +127,7 @@ HORIZONTAL
 BUTTON
 0
 10
-63
+55
 43
 NIL
 setup
@@ -114,10 +142,10 @@ NIL
 1
 
 BUTTON
-69
-11
-132
-44
+54
+10
+109
+43
 NIL
 go
 T
@@ -131,10 +159,10 @@ NIL
 1
 
 BUTTON
-134
-12
-197
-45
+108
+10
+163
+43
 step
 go
 NIL
@@ -148,10 +176,10 @@ NIL
 1
 
 SLIDER
-1
-80
-173
-113
+0
+75
+140
+108
 N_cues
 N_cues
 1
@@ -163,50 +191,116 @@ NIL
 HORIZONTAL
 
 PLOT
-665
+602
 10
-1475
+1489
 448
 State developement
 NIL
 NIL
 0.0
 10.0
-0.0
-10.0
+490.0
+510.0
 true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot count turtles with [color = white]"
+"default" 1.0 0 -16777216 true "" "plot count turtles with [color = grey]"
 "pen-1" 1.0 0 -2674135 true "" "plot count turtles with [color = red]"
-
-PLOT
-1483
-10
-1771
-190
-Histogram of link-neighbs count
-NIL
-NIL
-0.0
-100.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 1 -16777216 true "" "histogram [count my-links] of turtles"
 
 SWITCH
 0
-114
+312
 140
-147
+345
 copy_or_twist?
 copy_or_twist?
+0
 1
+-1000
+
+SWITCH
+0
+237
+140
+270
+switch_by_turtle?
+switch_by_turtle?
+1
+1
+-1000
+
+SWITCH
+0
+205
+140
+238
+present_color?
+present_color?
+1
+1
+-1000
+
+CHOOSER
+0
+269
+140
+314
+switch_by_color
+switch_by_color
+15 5
+0
+
+SLIDER
+0
+345
+140
+378
+stable_length
+stable_length
+5
+100
+100.0
+5
+1
+NIL
+HORIZONTAL
+
+SLIDER
+0
+107
+140
+140
+grey_ratio
+grey_ratio
+0
+1001
+500.0
+1
+1
+NIL
+HORIZONTAL
+
+SWITCH
+0
+140
+140
+173
+original_Kaufmann?
+original_Kaufmann?
+1
+1
+-1000
+
+SWITCH
+0
+172
+140
+205
+original_recipe?
+original_recipe?
+0
 1
 -1000
 
